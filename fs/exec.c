@@ -152,6 +152,7 @@ struct mm_struct;
  * include/linux/sched.h
  */
 #define PF_NPROC_EXCEEDED 0x00001000
+#define cond_resched _cond_resched
 struct task_struct {
 	unsigned int flags;
 	const struct cred *cred;
@@ -163,6 +164,8 @@ unsigned long rlimit(unsigned int limit);
 void sched_exec(void);
 void task_numa_free(struct task_struct *p);
 void mmput(struct mm_struct *);
+int fatal_signal_pending(struct task_struct *p);
+int _cond_resched(void);
 
 /*
  * include/linux/rcupdate.h
@@ -184,8 +187,15 @@ struct task_struct* get_current(void);
 /*
  * include/uapi/asm-generic/errno-base.h
  */
+#define E2BIG 7
 #define EAGAIN 11
 #define ENOMEM 12
+#define EFAULT 14
+
+/*
+ * include/linux/errno.h
+ */
+#define ERESTARTNOHAND 514
 
 /*
  * include/uapi/asm-generic/resource.h
@@ -630,6 +640,9 @@ static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 
 	return native;
 }
+#endif
+
+static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr);
 
 /*
  * count() counts the number of strings in array ARGV.
@@ -660,6 +673,7 @@ static int count(struct user_arg_ptr argv, int max)
 	return i;
 }
 
+#if 0
 /*
  * 'copy_strings()' copies argument/environment strings from the old
  * processes's memory to the new process's stack.  The call to get_user_pages()
@@ -1657,7 +1671,6 @@ static int exec_binprm(struct linux_binprm *bprm)
 static void check_unsafe_exec(struct linux_binprm *bprm);
 static struct file *do_open_execat(int fd, struct filename *name, int flags);
 static int bprm_mm_init(struct linux_binprm *bprm);
-static int count(struct user_arg_ptr argv, int max);
 static int copy_strings(int argc, struct user_arg_ptr argv,
 			struct linux_binprm *bprm);
 static int exec_binprm(struct linux_binprm *bprm);
