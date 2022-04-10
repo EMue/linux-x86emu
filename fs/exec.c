@@ -68,11 +68,15 @@
 #include <trace/events/sched.h>
 #endif
 
+#define CONFIG_MMU
+#define CONFIG_X86
+
 /*
  * include/linux/compiler.h
  */
 #define __user
 #define unlikely(x) x
+#define ACCESS_ONCE(x) x
 
 /*
  * include/linux/stddef.h
@@ -82,6 +86,7 @@
 /*
  * include/uapi/asm-generic/posix_types.h
  */
+typedef unsigned long __kernel_ulong_t;
 typedef unsigned long __kernel_size_t;
 
 /*
@@ -93,6 +98,8 @@ typedef struct {
 } atomic_t;
 typedef unsigned gfp_t;
 typedef _Bool bool;
+struct list_head {
+};
 
 /*
  * include/linux/err.h
@@ -148,22 +155,84 @@ struct fs_struct {
 };
 
 /*
+ * include/linux/rwsem.h
+ */
+struct rw_semaphore {
+};
+void up_write(struct rw_semaphore *sem);
+void down_write(struct rw_semaphore *sem);
+
+/*
+ * arch/x86/include/asm/pgtable_64_types.h
+ */
+typedef unsigned long pgprotval_t;
+
+/*
+ * arch/x86/include/asm/pgtable_types.h
+ */
+typedef struct pgprot { pgprotval_t pgprot; } pgprot_t;
+#define __pgprot(x)      ((pgprot_t) { (x) } )
+
+/*
+ * include/linux/mman.h
+ */
+#define arch_vm_get_page_prot(vm_flags) __pgprot(0)
+
+/*
  * include/linux/mm_types.h
  */
-struct mm_struct;
+struct mm_struct {
+	struct rw_semaphore mmap_sem;
+	unsigned long total_vm;
+	unsigned long stack_vm;
+};
 struct page;
+struct vm_area_struct {
+	unsigned long vm_start;
+	unsigned long vm_end;
+	struct mm_struct *vm_mm;
+	pgprot_t vm_page_prot;
+	unsigned long vm_flags;
+	struct list_head anon_vma_chain;
+};
+enum {
+	MM_FILEPAGES,
+	MM_ANONPAGES,
+	MM_SWAPENTS,
+	NR_MM_COUNTERS
+};
+
+/*
+ * include/uapi/linux/resource.h
+ */
+struct rlimit {
+	__kernel_ulong_t rlim_cur;
+};
+
+/*
+ * include/uapi/asm-generic/resource.h
+ */
+#define RLIMIT_STACK 3
+#define RLIMIT_NPROC 6
+#define RLIM_NLIMITS 16
 
 /*
  * include/linux/sched.h
  */
 #define PF_NPROC_EXCEEDED 0x00001000
 #define cond_resched _cond_resched
+struct signal_struct {
+	struct rlimit rlim[RLIM_NLIMITS];
+};
 struct task_struct {
 	unsigned int flags;
 	const struct cred *cred;
 	unsigned in_execve:1;
 	struct files_struct *files;
 	struct fs_struct *fs;
+	struct mm_struct *mm;
+	struct signal_struct *signal;
+	unsigned int personality;
 };
 unsigned long rlimit(unsigned int limit);
 void sched_exec(void);
@@ -203,15 +272,17 @@ struct task_struct* get_current(void);
 #define ERESTARTNOHAND 514
 
 /*
- * include/uapi/asm-generic/resource.h
+ * include/linux/slab_def.h
  */
-#define RLIMIT_NPROC 6
+struct kmem_cache;
 
 /*
  * include/linux/slab.h
  */
 void* kzalloc(size_t size, gfp_t flags);
 void kfree(const void*);
+void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags);;
+void kmem_cache_free(struct kmem_cache *, void *);
 
 /*
  * include/linux/binfmts.h
@@ -219,6 +290,8 @@ void kfree(const void*);
 #define BINPRM_FLAGS_PATH_INACCESSIBLE_BIT 2
 #define BINPRM_FLAGS_PATH_INACCESSIBLE (1 << BINPRM_FLAGS_PATH_INACCESSIBLE_BIT)
 struct linux_binprm {
+	struct vm_area_struct *vma;
+	unsigned long vma_pages;
 	struct mm_struct *mm;
 	unsigned long p;
 	struct file * file;
@@ -264,6 +337,9 @@ int copy_strings_kernel(int argc, const char *const *argv,
 #define PAGE_SHIFT 12
 #define PAGE_SIZE (_AC(1,UL) << PAGE_SHIFT)
 #define PAGE_MASK (~(PAGE_SIZE-1))
+#define VM_DATA_DEFAULT_FLAGS \
+	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
+	VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
 
 /*
  * include/uapi/linux/binfmts.h
@@ -326,6 +402,72 @@ static inline void flush_kernel_dcache_page(struct page *page)
  */
 void *kmap(struct page *page);
 void kunmap(struct page *page);
+
+/*
+ * include/linux/mm.h
+ */
+#define VM_STACK_DEFAULT_FLAGS VM_DATA_DEFAULT_FLAGS
+#define VM_NONE		0x00000000
+#define VM_READ		0x00000001
+#define VM_WRITE	0x00000002
+#define VM_EXEC		0x00000004
+#define VM_MAYREAD	0x00000010
+#define VM_MAYWRITE	0x00000020
+#define VM_MAYEXEC	0x00000040
+#define VM_SEQ_READ	0x00008000
+#define VM_RAND_READ	0x00010000
+#define VM_ACCOUNT	0x00100000
+#define VM_SOFTDIRTY	0
+#define VM_GROWSUP	VM_NONE
+#define VM_STACK_FLAGS (VM_GROWSUP | VM_STACK_DEFAULT_FLAGS | VM_ACCOUNT)
+#define VM_STACK_INCOMPLETE_SETUP (VM_RAND_READ | VM_SEQ_READ)
+extern struct kmem_cache *vm_area_cachep;
+void put_page(struct page *page);
+void add_mm_counter(struct mm_struct *mm, int member, long value);
+long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+		unsigned long start, unsigned long nr_pages,
+		int write, int force, struct page **pages,
+		struct vm_area_struct **vmas);
+pgprot_t vm_get_page_prot(unsigned long vm_flags);
+int insert_vm_struct(struct mm_struct *, struct vm_area_struct *);
+
+/*
+ * include/uapi/linux/limits.h
+ */
+#define ARG_MAX 131072
+
+/*
+ * include/asm-generic/cacheflush.h
+ */
+#define flush_cache_page(vma, vmaddr, pfn) do { } while (0)
+
+/*
+ * arch/x86/boot/boot.h
+ */
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
+/*
+ * include/uapi/linux/personality.h
+ */
+enum {
+	READ_IMPLIES_EXEC =	0x0400000,
+};
+
+/*
+ * arch/x86/include/asm/processor.h
+ */
+#define STACK_TOP_MAX TASK_SIZE_MAX
+#define TASK_SIZE_MAX ((1UL << 47) - PAGE_SIZE)
+
+/*
+ * include/linux/list.h
+ */
+void INIT_LIST_HEAD(struct list_head *list);
+
+/*
+ * arch/x86/include/asm/mmu_context.h
+ */
+void arch_bprm_mm_init(struct mm_struct *mm, struct vm_area_struct *vma);
 
 #if 0
 int suid_dumpable = 0;
@@ -421,6 +563,7 @@ out:
   	return error;
 }
 #endif /* #ifdef CONFIG_USELIB */
+#endif
 
 #ifdef CONFIG_MMU
 /*
@@ -615,6 +758,7 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
 
 #endif /* CONFIG_MMU */
 
+#if 0
 /*
  * Create a new mm_struct and populate it with a temporary stack
  * vm_area_struct.  We don't have enough context at this point to set the stack
@@ -708,13 +852,6 @@ static int count(struct user_arg_ptr argv, int max)
 	}
 	return i;
 }
-
-static bool valid_arg_len(struct linux_binprm *bprm, long len);
-static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
-		int write);
-static void put_arg_page(struct page *page);
-static void flush_arg_page(struct linux_binprm *bprm, unsigned long pos,
-		struct page *page);
 
 /*
  * 'copy_strings()' copies argument/environment strings from the old
