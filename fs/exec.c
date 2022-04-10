@@ -151,6 +151,7 @@ struct fs_struct {
  * include/linux/mm_types.h
  */
 struct mm_struct;
+struct page;
 
 /*
  * include/linux/sched.h
@@ -253,8 +254,21 @@ int copy_strings_kernel(int argc, const char *const *argv,
 #define AT_FDCWD -100
 
 /*
+ * include/uapi/linux/const.h
+ */
+#define _AC(X,Y) X
+
+/*
+ * arch/x86/include/asm/page_types.h
+ */
+#define PAGE_SHIFT 12
+#define PAGE_SIZE (_AC(1,UL) << PAGE_SHIFT)
+#define PAGE_MASK (~(PAGE_SIZE-1))
+
+/*
  * include/uapi/linux/binfmts.h
  */
+#define MAX_ARG_STRLEN (PAGE_SIZE * 32)
 #define MAX_ARG_STRINGS 0x7FFFFFFF
 
 /*
@@ -296,6 +310,22 @@ void acct_update_integrals(struct task_struct *tsk);
  */
 // Should be a macro.
 int get_user(const void *, const void *);
+long strnlen_user(const char *str, long n);
+unsigned long copy_from_user(
+		void *to, const void __user *from, unsigned long n);
+
+/*
+ * include/linux/highmem.h
+ */
+static inline void flush_kernel_dcache_page(struct page *page)
+{
+}
+
+/*
+ * arch/x86/include/asm/highmen.h
+ */
+void *kmap(struct page *page);
+void kunmap(struct page *page);
 
 #if 0
 int suid_dumpable = 0;
@@ -679,7 +709,13 @@ static int count(struct user_arg_ptr argv, int max)
 	return i;
 }
 
-#if 0
+static bool valid_arg_len(struct linux_binprm *bprm, long len);
+static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos,
+		int write);
+static void put_arg_page(struct page *page);
+static void flush_arg_page(struct linux_binprm *bprm, unsigned long pos,
+		struct page *page);
+
 /*
  * 'copy_strings()' copies argument/environment strings from the old
  * processes's memory to the new process's stack.  The call to get_user_pages()
@@ -773,6 +809,7 @@ out:
 	return ret;
 }
 
+#if 0
 /*
  * Like copy_strings, but get argv and its values from kernel memory.
  */
