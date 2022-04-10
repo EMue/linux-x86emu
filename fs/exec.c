@@ -22,6 +22,7 @@
  * formats. 
  */
 
+#if 0
 #include <linux/slab.h>
 #include <linux/file.h>
 #include <linux/fdtable.h>
@@ -65,7 +66,218 @@
 #include "internal.h"
 
 #include <trace/events/sched.h>
+#endif
 
+/*
+ * include/linux/compiler.h
+ */
+#define __user
+#define unlikely(x) x
+
+/*
+ * include/linux/stddef.h
+ */
+#define NULL ((void *)0)
+
+/*
+ * include/uapi/asm-generic/posix_types.h
+ */
+typedef unsigned long __kernel_size_t;
+
+/*
+ * include/linux/types.h
+ */
+typedef __kernel_size_t size_t;
+typedef struct {
+	int counter;
+} atomic_t;
+typedef unsigned gfp_t;
+typedef _Bool bool;
+
+/*
+ * include/linux/err.h
+ */
+#define MAX_ERRNO 4095
+#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+static inline bool IS_ERR(const void *ptr)
+{
+	return IS_ERR_VALUE((unsigned long)ptr);
+}
+static inline long PTR_ERR(const void *ptr)
+{
+	return (long) ptr;
+}
+
+/*
+ * include/linux/cred.h
+ */
+#define current_cred() \
+ rcu_dereference_protected(current->cred, 1)
+#define current_cred_xxx(xxx)	\
+({ \
+ current_cred()->xxx; \
+})
+#define current_user() (current_cred_xxx(user))
+struct user_struct {
+	atomic_t processes;
+};
+struct cred {
+	struct user_struct *user;
+};
+
+/*
+ * include/linux/fdtable.h
+ */
+struct fdtable;
+struct files_struct {
+	struct fdtable *fdt;
+};
+int unshare_files(struct files_struct **);
+void put_files_struct(struct files_struct *fs);
+void reset_files_struct(struct files_struct *);
+
+/*
+ * include/linux/fs_struct.h
+ */
+struct fs_struct {
+	int in_exec;
+};
+
+/*
+ * include/linux/mm_types.h
+ */
+struct mm_struct;
+
+/*
+ * include/linux/sched.h
+ */
+#define PF_NPROC_EXCEEDED 0x00001000
+struct task_struct {
+	unsigned int flags;
+	const struct cred *cred;
+	unsigned in_execve:1;
+	struct files_struct *files;
+	struct fs_struct *fs;
+};
+unsigned long rlimit(unsigned int limit);
+void sched_exec(void);
+void task_numa_free(struct task_struct *p);
+void mmput(struct mm_struct *);
+
+/*
+ * include/linux/rcupdate.h
+ */
+#define rcu_dereference_protected(p, c) p
+#define rcu_dereference_raw(p) p
+
+/*
+ * arch/x86/include/asm/atomic.h
+ */
+int atomic_read(const atomic_t *v);
+
+/*
+ * arch/x86/include/asm/current.h
+ */
+struct task_struct* get_current(void);
+#define current get_current()
+
+/*
+ * include/uapi/asm-generic/errno-base.h
+ */
+#define EAGAIN 11
+#define ENOMEM 12
+
+/*
+ * include/uapi/asm-generic/resource.h
+ */
+#define RLIMIT_NPROC 6
+
+/*
+ * include/linux/slab.h
+ */
+void* kzalloc(size_t size, gfp_t flags);
+void kfree(const void*);
+
+/*
+ * include/linux/binfmts.h
+ */
+#define BINPRM_FLAGS_PATH_INACCESSIBLE_BIT 2
+#define BINPRM_FLAGS_PATH_INACCESSIBLE (1 << BINPRM_FLAGS_PATH_INACCESSIBLE_BIT)
+struct linux_binprm {
+	struct mm_struct *mm;
+	unsigned long p;
+	struct file * file;
+	int argc, envc;
+	const char * filename;
+	const char * interp;
+	unsigned interp_flags;
+	unsigned long exec;
+};
+int prepare_bprm_creds(struct linux_binprm *bprm);
+int prepare_binprm(struct linux_binprm *);
+int copy_strings_kernel(int argc, const char *const *argv,
+		        struct linux_binprm *bprm);
+
+/*
+ * include/linux/gfp.h
+ */
+#define ___GFP_WAIT 0x10u
+#define ___GFP_IO 0x40u
+#define ___GFP_FS 0x80u
+#define ___GFP_RECLAIMABLE 0x80000u
+#define __GFP_WAIT ((gfp_t)___GFP_WAIT)
+#define __GFP_IO ((gfp_t)___GFP_IO)
+#define __GFP_FS ((gfp_t)___GFP_FS)
+#define __GFP_RECLAIMABLE ((gfp_t)___GFP_RECLAIMABLE)
+#define GFP_KERNEL (__GFP_WAIT | __GFP_IO | __GFP_FS)
+#define GFP_TEMPORARY	(__GFP_WAIT | __GFP_IO | __GFP_FS | \
+			__GFP_RECLAIMABLE)
+
+/*
+ * include/uapi/linux/fcntl.h
+ */
+#define AT_FDCWD -100
+
+/*
+ * include/uapi/linux/binfmts.h
+ */
+#define MAX_ARG_STRINGS 0x7FFFFFFF
+
+/*
+ * include/linux/fs.h
+ */
+struct filename {
+	const char *name;
+};
+void putname(struct filename *name);
+
+/*
+ * include/linux/kernel.h
+ */
+char *kasprintf(gfp_t gfp, const char *fmt, ...);
+
+/*
+ * include/asm-generic/bitops/non-atomic.h
+ */
+int test_bit(int nr, const volatile unsigned long *addr);
+
+/*
+ * include/linux/fdtable.h
+ */
+struct fdtable {
+	unsigned long *close_on_exec;
+};
+static inline bool close_on_exec(int fd, const struct fdtable *fdt)
+{
+	return test_bit(fd, fdt->close_on_exec);
+}
+
+/*
+ * include/linux/tsacct_kern.h
+ */
+void acct_update_integrals(struct task_struct *tsk);
+
+#if 0
 int suid_dumpable = 0;
 
 static LIST_HEAD(formats);
@@ -383,6 +595,7 @@ err:
 
 	return err;
 }
+#endif
 
 struct user_arg_ptr {
 #ifdef CONFIG_COMPAT
@@ -396,6 +609,7 @@ struct user_arg_ptr {
 	} ptr;
 };
 
+#if 0
 static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
 	const char __user *native;
@@ -1438,6 +1652,17 @@ static int exec_binprm(struct linux_binprm *bprm)
 
 	return ret;
 }
+#endif
+
+static void check_unsafe_exec(struct linux_binprm *bprm);
+static struct file *do_open_execat(int fd, struct filename *name, int flags);
+static int bprm_mm_init(struct linux_binprm *bprm);
+static int count(struct user_arg_ptr argv, int max);
+static int copy_strings(int argc, struct user_arg_ptr argv,
+			struct linux_binprm *bprm);
+static int exec_binprm(struct linux_binprm *bprm);
+static void free_bprm(struct linux_binprm *bprm);
+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
 
 /*
  * sys_execve() executes a new program.
@@ -1586,6 +1811,7 @@ out_ret:
 	return retval;
 }
 
+#if 0
 int do_execve(struct filename *filename,
 	const char __user *const __user *__argv,
 	const char __user *const __user *__envp)
@@ -1709,4 +1935,5 @@ COMPAT_SYSCALL_DEFINE5(execveat, int, fd,
 				  getname_flags(filename, lookup_flags, NULL),
 				  argv, envp, flags);
 }
+#endif
 #endif
