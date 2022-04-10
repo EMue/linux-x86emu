@@ -99,6 +99,10 @@ typedef _Bool bool;
  */
 #define MAX_ERRNO 4095
 #define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+static inline void * ERR_PTR(long error)
+{
+	return (void *) error;
+}
 static inline bool IS_ERR(const void *ptr)
 {
 	return IS_ERR_VALUE((unsigned long)ptr);
@@ -286,6 +290,12 @@ static inline bool close_on_exec(int fd, const struct fdtable *fdt)
  * include/linux/tsacct_kern.h
  */
 void acct_update_integrals(struct task_struct *tsk);
+
+/*
+ * arch/x86/include/asm/uaccess.h
+ */
+// Should be a macro.
+int get_user(const void *, const void *);
 
 #if 0
 int suid_dumpable = 0;
@@ -619,7 +629,6 @@ struct user_arg_ptr {
 	} ptr;
 };
 
-#if 0
 static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
 	const char __user *native;
@@ -640,9 +649,6 @@ static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 
 	return native;
 }
-#endif
-
-static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr);
 
 /*
  * count() counts the number of strings in array ARGV.
