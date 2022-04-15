@@ -148,9 +148,17 @@ void put_files_struct(struct files_struct *fs);
 void reset_files_struct(struct files_struct *);
 
 /*
+ * include/linux/spinlock_types.h
+ */
+typedef struct spinlock {
+} spinlock_t;
+
+/*
  * include/linux/fs_struct.h
  */
 struct fs_struct {
+	int users;
+	spinlock_t lock;
 	int in_exec;
 };
 
@@ -217,6 +225,11 @@ struct rlimit {
 #define RLIM_NLIMITS 16
 
 /*
+ * include/asm-generic/bitops/non-atomic.h
+ */
+int test_bit(int nr, const volatile unsigned long *addr);
+
+/*
  * include/linux/sched.h
  */
 #define PF_NPROC_EXCEEDED 0x00001000
@@ -226,6 +239,7 @@ struct signal_struct {
 };
 struct task_struct {
 	unsigned int flags;
+	unsigned int ptrace;
 	const struct cred *cred;
 	unsigned in_execve:1;
 	struct files_struct *files;
@@ -233,6 +247,7 @@ struct task_struct {
 	struct mm_struct *mm;
 	struct signal_struct *signal;
 	unsigned int personality;
+	unsigned long atomic_flags;
 };
 unsigned long rlimit(unsigned int limit);
 void sched_exec(void);
@@ -240,12 +255,22 @@ void task_numa_free(struct task_struct *p);
 void mmput(struct mm_struct *);
 int fatal_signal_pending(struct task_struct *p);
 int _cond_resched(void);
+#define PFA_NO_NEW_PRIVS 0
+#define TASK_PFA_TEST(name, func)                                       \
+	static inline bool task_##func(struct task_struct *p)           \
+	{ return test_bit(PFA_##name, &p->atomic_flags); }
+TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
+struct task_struct *next_thread(const struct task_struct *p);
+#define while_each_thread(g, t) \
+	while ((t = next_thread(t)) != g)
 
 /*
  * include/linux/rcupdate.h
  */
 #define rcu_dereference_protected(p, c) p
 #define rcu_dereference_raw(p) p
+void rcu_read_lock(void);
+void rcu_read_unlock(void);
 
 /*
  * arch/x86/include/asm/atomic.h
@@ -300,6 +325,7 @@ struct linux_binprm {
 	const char * interp;
 	unsigned interp_flags;
 	unsigned long exec;
+	int unsafe;
 };
 int prepare_bprm_creds(struct linux_binprm *bprm);
 int prepare_binprm(struct linux_binprm *);
@@ -359,11 +385,6 @@ void putname(struct filename *name);
  * include/linux/kernel.h
  */
 char *kasprintf(gfp_t gfp, const char *fmt, ...);
-
-/*
- * include/asm-generic/bitops/non-atomic.h
- */
-int test_bit(int nr, const volatile unsigned long *addr);
 
 /*
  * include/linux/fdtable.h
@@ -468,6 +489,25 @@ void INIT_LIST_HEAD(struct list_head *list);
  * arch/x86/include/asm/mmu_context.h
  */
 void arch_bprm_mm_init(struct mm_struct *mm, struct vm_area_struct *vma);
+
+/*
+ * include/linux/ptrace.h
+ */
+#define PT_PTRACE_CAP 0x00000004
+
+/*
+ * include/linux/security.h
+ */
+#define LSM_UNSAFE_SHARE 1
+#define LSM_UNSAFE_PTRACE 2
+#define LSM_UNSAFE_PTRACE_CAP 4
+#define LSM_UNSAFE_NO_NEW_PRIVS 8
+
+/*
+ * include/linux/spinlock.h
+ */
+void spin_lock(spinlock_t *lock);
+void spin_unlock(spinlock_t *lock);
 
 #if 0
 int suid_dumpable = 0;
@@ -1631,6 +1671,7 @@ void install_exec_creds(struct linux_binprm *bprm)
 	mutex_unlock(&current->signal->cred_guard_mutex);
 }
 EXPORT_SYMBOL(install_exec_creds);
+#endif
 
 /*
  * determine how safe it is to execute the proposed program
@@ -1673,6 +1714,7 @@ static void check_unsafe_exec(struct linux_binprm *bprm)
 	spin_unlock(&p->fs->lock);
 }
 
+#if 0
 /*
  * Fill the binprm structure from the inode.
  * Check permissions, then read the first 128 (BINPRM_BUF_SIZE) bytes
