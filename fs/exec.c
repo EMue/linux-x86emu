@@ -263,6 +263,8 @@ TASK_PFA_TEST(NO_NEW_PRIVS, no_new_privs)
 struct task_struct *next_thread(const struct task_struct *p);
 #define while_each_thread(g, t) \
 	while ((t = next_thread(t)) != g)
+struct mm_struct * mm_alloc(void);
+void mmdrop(struct mm_struct * mm);
 
 /*
  * include/linux/rcupdate.h
@@ -798,7 +800,6 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
 
 #endif /* CONFIG_MMU */
 
-#if 0
 /*
  * Create a new mm_struct and populate it with a temporary stack
  * vm_area_struct.  We don't have enough context at this point to set the stack
@@ -829,7 +830,6 @@ err:
 
 	return err;
 }
-#endif
 
 struct user_arg_ptr {
 #ifdef CONFIG_COMPAT
