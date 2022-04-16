@@ -137,6 +137,7 @@ struct user_struct {
 struct cred {
 	struct user_struct *user;
 };
+void abort_creds(struct cred *);
 
 /*
  * include/linux/fdtable.h
@@ -239,12 +240,20 @@ struct pid_namespace;
 struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
 
 /*
+ * include/linux/mutex.h
+ */
+struct mutex {
+};
+void mutex_unlock(struct mutex *lock);
+
+/*
  * include/linux/sched.h
  */
 #define PF_NPROC_EXCEEDED 0x00001000
 #define cond_resched _cond_resched
 struct signal_struct {
 	struct rlimit rlim[RLIM_NLIMITS];
+	struct mutex cred_guard_mutex;
 };
 struct task_struct {
 	unsigned int flags;
@@ -340,6 +349,7 @@ struct linux_binprm {
 	unsigned interp_flags;
 	unsigned long exec;
 	int unsafe;
+	struct cred *cred;
 };
 int prepare_bprm_creds(struct linux_binprm *bprm);
 int prepare_binprm(struct linux_binprm *);
@@ -394,6 +404,7 @@ struct filename {
 	const char *name;
 };
 void putname(struct filename *name);
+void allow_write_access(struct file *file);
 
 /*
  * include/linux/kernel.h
@@ -545,6 +556,11 @@ void sched_process_exec(struct task_struct *p, pid_t old_pid,
  * include/linux/cn_proc.h
  */
 void proc_exec_connector(struct task_struct *task);
+
+/*
+ * include/linux/file.h
+ */
+void fput(struct file *);
 
 #if 0
 int suid_dumpable = 0;
@@ -1649,6 +1665,7 @@ int prepare_bprm_creds(struct linux_binprm *bprm)
 	mutex_unlock(&current->signal->cred_guard_mutex);
 	return -ENOMEM;
 }
+#endif
 
 static void free_bprm(struct linux_binprm *bprm)
 {
@@ -1667,6 +1684,7 @@ static void free_bprm(struct linux_binprm *bprm)
 	kfree(bprm);
 }
 
+#if 0
 int bprm_change_interp(char *interp, struct linux_binprm *bprm)
 {
 	/* If a binfmt changed the interp, free it first. */
@@ -1933,7 +1951,6 @@ static int bprm_mm_init(struct linux_binprm *bprm);
 static int copy_strings(int argc, struct user_arg_ptr argv,
 			struct linux_binprm *bprm);
 static int exec_binprm(struct linux_binprm *bprm);
-static void free_bprm(struct linux_binprm *bprm);
 static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
 
 /*
