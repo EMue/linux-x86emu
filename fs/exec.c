@@ -88,6 +88,7 @@
  */
 typedef unsigned long __kernel_ulong_t;
 typedef unsigned long __kernel_size_t;
+typedef int __kernel_pid_t;
 
 /*
  * include/linux/types.h
@@ -100,6 +101,7 @@ typedef unsigned gfp_t;
 typedef _Bool bool;
 struct list_head {
 };
+typedef __kernel_pid_t pid_t;
 
 /*
  * include/linux/err.h
@@ -230,6 +232,13 @@ struct rlimit {
 int test_bit(int nr, const volatile unsigned long *addr);
 
 /*
+ * include/linux/pid_namespace.h
+ */
+struct task_struct;
+struct pid_namespace;
+struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
+
+/*
  * include/linux/sched.h
  */
 #define PF_NPROC_EXCEEDED 0x00001000
@@ -248,6 +257,8 @@ struct task_struct {
 	struct signal_struct *signal;
 	unsigned int personality;
 	unsigned long atomic_flags;
+	pid_t pid;
+	struct task_struct *parent;
 };
 unsigned long rlimit(unsigned int limit);
 void sched_exec(void);
@@ -265,6 +276,7 @@ struct task_struct *next_thread(const struct task_struct *p);
 	while ((t = next_thread(t)) != g)
 struct mm_struct * mm_alloc(void);
 void mmdrop(struct mm_struct * mm);
+pid_t task_pid_nr_ns(struct task_struct *tsk, struct pid_namespace *ns);
 
 /*
  * include/linux/rcupdate.h
@@ -496,6 +508,7 @@ void arch_bprm_mm_init(struct mm_struct *mm, struct vm_area_struct *vma);
  * include/linux/ptrace.h
  */
 #define PT_PTRACE_CAP 0x00000004
+void ptrace_event(int event, unsigned long message);
 
 /*
  * include/linux/security.h
@@ -510,6 +523,28 @@ void arch_bprm_mm_init(struct mm_struct *mm, struct vm_area_struct *vma);
  */
 void spin_lock(spinlock_t *lock);
 void spin_unlock(spinlock_t *lock);
+
+/*
+ * include/linux/audit.h
+ */
+void audit_bprm(struct linux_binprm *bprm);
+
+/*
+ * include/trace/events/sched.h
+ */
+void sched_process_exec(struct task_struct *p, pid_t old_pid,
+                        struct linux_binprm *bprm);
+#define trace_sched_process_exec sched_process_exec
+
+/*
+ * include/uapi/linux/ptrace.h
+ */
+#define PTRACE_EVENT_EXEC 4
+
+/*
+ * include/linux/cn_proc.h
+ */
+void proc_exec_connector(struct task_struct *task);
 
 #if 0
 int suid_dumpable = 0;
@@ -1866,6 +1901,9 @@ int search_binary_handler(struct linux_binprm *bprm)
 	return retval;
 }
 EXPORT_SYMBOL(search_binary_handler);
+#endif
+
+int search_binary_handler(struct linux_binprm *bprm);
 
 static int exec_binprm(struct linux_binprm *bprm)
 {
@@ -1888,7 +1926,6 @@ static int exec_binprm(struct linux_binprm *bprm)
 
 	return ret;
 }
-#endif
 
 static void check_unsafe_exec(struct linux_binprm *bprm);
 static struct file *do_open_execat(int fd, struct filename *name, int flags);
