@@ -151,6 +151,7 @@ unsigned long raw_copy_from_user(void *to, const void __user *from, unsigned lon
 }
 EXPORT_SYMBOL(raw_copy_from_user);
 
+#ifndef X86EMU
 static int copy_chunk_to_user(unsigned long to, int len, void *arg)
 {
 	unsigned long *from_ptr = arg, from = *from_ptr;
@@ -245,3 +246,4 @@ long __strnlen_user(const void __user *str, long len)
 	return 0;
 }
 EXPORT_SYMBOL(__strnlen_user);
+#endif
