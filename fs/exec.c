@@ -72,7 +72,7 @@
 
 #include <trace/events/sched.h>
 
-#if 0
+#ifndef X86EMU
 int suid_dumpable = 0;
 
 static LIST_HEAD(formats);
@@ -293,7 +293,7 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
 
 #else
 
-#if 0
+#ifndef X86EMU
 static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
 {
 }
@@ -592,7 +592,7 @@ out:
 	return ret;
 }
 
-#if 0
+#ifndef X86EMU
 /*
  * Like copy_strings, but get argv and its values from kernel memory.
  */
@@ -885,7 +885,7 @@ exit:
 	return ERR_PTR(err);
 }
 
-#if 0
+#ifndef X86EMU
 struct file *open_exec(const char *name)
 {
 	struct filename *filename = getname_kernel(name);
@@ -1440,7 +1440,7 @@ static void free_bprm(struct linux_binprm *bprm)
 	kfree(bprm);
 }
 
-#if 0
+#ifndef X86EMU
 int bprm_change_interp(const char *interp, struct linux_binprm *bprm)
 {
 	/* If a binfmt changed the interp, free it first. */
@@ -1519,7 +1519,7 @@ static void check_unsafe_exec(struct linux_binprm *bprm)
 	spin_unlock(&p->fs->lock);
 }
 
-#if 0
+#ifndef X86EMU
 static void bprm_fill_uid(struct linux_binprm *bprm)
 {
 	struct inode *inode;
@@ -1877,7 +1877,7 @@ static int do_execveat_common(int fd, struct filename *filename,
 	return __do_execve_file(fd, filename, argv, envp, flags, NULL);
 }
 
-#if 0
+#ifndef X86EMU
 int do_execve_file(struct file *file, void *__argv, void *__envp)
 {
 	struct user_arg_ptr argv = { .ptr.native = __argv };
@@ -1896,7 +1896,7 @@ int do_execve(struct filename *filename,
 	return do_execveat_common(AT_FDCWD, filename, argv, envp, 0);
 }
 
-#if 0
+#ifndef X86EMU
 int do_execveat(int fd, struct filename *filename,
 		const char __user *const __user *__argv,
 		const char __user *const __user *__envp,
@@ -1979,6 +1979,7 @@ SYSCALL_DEFINE3(execve,
 	return do_execve(getname(filename), argv, envp);
 }
 
+#ifdef X86EMU
 int user_execve(
 	const char *filename,
 	const char *const *argv,
@@ -1986,8 +1987,9 @@ int user_execve(
 {
 	return sys_execve(filename, argv, envp);
 }
+#endif
 
-#if 0
+#ifndef X86EMU
 SYSCALL_DEFINE5(execveat,
 		int, fd, const char __user *, filename,
 		const char __user *const __user *, argv,
