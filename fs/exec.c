@@ -1969,6 +1969,7 @@ void set_dumpable(struct mm_struct *mm, int value)
 		new = (old & ~MMF_DUMPABLE_MASK) | value;
 	} while (cmpxchg(&mm->flags, old, new) != old);
 }
+#endif
 
 SYSCALL_DEFINE3(execve,
 		const char __user *, filename,
@@ -1978,6 +1979,15 @@ SYSCALL_DEFINE3(execve,
 	return do_execve(getname(filename), argv, envp);
 }
 
+int user_execve(
+	const char *filename,
+	const char *const *argv,
+	const char *const *envp)
+{
+	return sys_execve(filename, argv, envp);
+}
+
+#if 0
 SYSCALL_DEFINE5(execveat,
 		int, fd, const char __user *, filename,
 		const char __user *const __user *, argv,
