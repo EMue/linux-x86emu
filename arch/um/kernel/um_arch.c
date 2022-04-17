@@ -26,6 +26,7 @@
 #include <mem_user.h>
 #include <os.h>
 
+#ifndef X86EMU
 #define DEFAULT_COMMAND_LINE "root=98:0"
 
 /* Changed in add_arg and setup_arch, which run before SMP is started */
@@ -233,11 +234,13 @@ void uml_finishsetup(void)
 
 	new_thread_handler();
 }
+#endif
 
 /* Set during early boot */
 unsigned long task_size;
 EXPORT_SYMBOL(task_size);
 
+#ifndef X86EMU
 unsigned long host_task_size;
 
 unsigned long brk_start;
@@ -361,3 +364,4 @@ void __init check_bugs(void)
 void apply_alternatives(struct alt_instr *start, struct alt_instr *end)
 {
 }
+#endif
