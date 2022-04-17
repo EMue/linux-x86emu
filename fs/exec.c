@@ -72,6 +72,7 @@
 
 #include <trace/events/sched.h>
 
+#if 0
 int suid_dumpable = 0;
 
 static LIST_HEAD(formats);
@@ -171,6 +172,7 @@ out:
   	return error;
 }
 #endif /* #ifdef CONFIG_USELIB */
+#endif
 
 #ifdef CONFIG_MMU
 /*
@@ -291,6 +293,7 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
 
 #else
 
+#if 0
 static inline void acct_arg_size(struct linux_binprm *bprm, unsigned long pages)
 {
 }
@@ -346,6 +349,7 @@ static bool valid_arg_len(struct linux_binprm *bprm, long len)
 {
 	return len <= bprm->p;
 }
+#endif
 
 #endif /* CONFIG_MMU */
 
@@ -588,6 +592,7 @@ out:
 	return ret;
 }
 
+#if 0
 /*
  * Like copy_strings, but get argv and its values from kernel memory.
  */
@@ -834,6 +839,7 @@ out:
 EXPORT_SYMBOL(transfer_args_to_stack);
 
 #endif /* CONFIG_MMU */
+#endif
 
 static struct file *do_open_execat(int fd, struct filename *name, int flags)
 {
@@ -879,6 +885,7 @@ exit:
 	return ERR_PTR(err);
 }
 
+#if 0
 struct file *open_exec(const char *name)
 {
 	struct filename *filename = getname_kernel(name);
@@ -1395,6 +1402,7 @@ void finalize_exec(struct linux_binprm *bprm)
 	task_unlock(current->group_leader);
 }
 EXPORT_SYMBOL(finalize_exec);
+#endif
 
 /*
  * Prepare credentials and lock ->cred_guard_mutex.
@@ -1432,6 +1440,7 @@ static void free_bprm(struct linux_binprm *bprm)
 	kfree(bprm);
 }
 
+#if 0
 int bprm_change_interp(const char *interp, struct linux_binprm *bprm)
 {
 	/* If a binfmt changed the interp, free it first. */
@@ -1471,6 +1480,7 @@ void install_exec_creds(struct linux_binprm *bprm)
 	mutex_unlock(&current->signal->cred_guard_mutex);
 }
 EXPORT_SYMBOL(install_exec_creds);
+#endif
 
 /*
  * determine how safe it is to execute the proposed program
@@ -1509,6 +1519,7 @@ static void check_unsafe_exec(struct linux_binprm *bprm)
 	spin_unlock(&p->fs->lock);
 }
 
+#if 0
 static void bprm_fill_uid(struct linux_binprm *bprm)
 {
 	struct inode *inode;
@@ -1683,6 +1694,7 @@ int search_binary_handler(struct linux_binprm *bprm)
 	return retval;
 }
 EXPORT_SYMBOL(search_binary_handler);
+#endif
 
 static int exec_binprm(struct linux_binprm *bprm)
 {
@@ -1865,6 +1877,7 @@ static int do_execveat_common(int fd, struct filename *filename,
 	return __do_execve_file(fd, filename, argv, envp, flags, NULL);
 }
 
+#if 0
 int do_execve_file(struct file *file, void *__argv, void *__envp)
 {
 	struct user_arg_ptr argv = { .ptr.native = __argv };
@@ -1996,4 +2009,5 @@ COMPAT_SYSCALL_DEFINE5(execveat, int, fd,
 				  getname_flags(filename, lookup_flags, NULL),
 				  argv, envp, flags);
 }
+#endif
 #endif
