@@ -102,6 +102,8 @@ typedef _Bool bool;
 struct list_head {
 };
 typedef __kernel_pid_t pid_t;
+typedef unsigned fmode_t;
+typedef unsigned short umode_t;
 
 /*
  * include/linux/err.h
@@ -309,10 +311,12 @@ struct task_struct* get_current(void);
 /*
  * include/uapi/asm-generic/errno-base.h
  */
-#define E2BIG 7
-#define EAGAIN 11
-#define ENOMEM 12
-#define EFAULT 14
+#define E2BIG		7
+#define EAGAIN		11
+#define ENOMEM		12
+#define EACCES		13
+#define EFAULT		14
+#define EINVAL		22
 
 /*
  * include/linux/errno.h
@@ -374,7 +378,9 @@ int copy_strings_kernel(int argc, const char *const *argv,
 /*
  * include/uapi/linux/fcntl.h
  */
-#define AT_FDCWD -100
+#define AT_FDCWD		-100
+#define AT_SYMLINK_NOFOLLOW	0x100
+#define AT_EMPTY_PATH		0x1000
 
 /*
  * include/uapi/linux/const.h
@@ -398,13 +404,40 @@ int copy_strings_kernel(int argc, const char *const *argv,
 #define MAX_ARG_STRINGS 0x7FFFFFFF
 
 /*
+ * include/linux/mount.h
+ */
+#define MNT_NOEXEC	0x04
+struct vfsmount {
+	int mnt_flags;
+};
+
+/*
+ * include/linux/path.h
+ */
+struct path {
+	struct vfsmount *mnt;
+};
+
+/*
  * include/linux/fs.h
  */
+#define FMODE_EXEC ((fmode_t)0x20)
+#define __FMODE_EXEC ((int) FMODE_EXEC)
+#define MAY_EXEC	0x00000001
+#define MAY_OPEN	0x00000020
 struct filename {
 	const char *name;
 };
+struct inode {
+	umode_t i_mode;
+};
+struct file {
+	struct path f_path;
+};
 void putname(struct filename *name);
 void allow_write_access(struct file *file);
+struct inode *file_inode(const struct file *f);
+int deny_write_access(struct file *file);
 
 /*
  * include/linux/kernel.h
@@ -561,6 +594,43 @@ void proc_exec_connector(struct task_struct *task);
  * include/linux/file.h
  */
 void fput(struct file *);
+
+/*
+ * fs/internal.h
+ */
+struct open_flags {
+	int open_flag;
+	int acc_mode;
+	int intent;
+	int lookup_flags;
+};
+struct file *do_filp_open(int dfd, struct filename *pathname,
+                          const struct open_flags *op);
+
+/*
+ * include/uapi/asm-generic/fcntl.h
+ */
+#define O_RDONLY	00000000
+#define O_LARGEFILE	00100000
+
+/*
+ * include/linux/namei.h
+ */
+#define LOOKUP_FOLLOW   0x0001
+#define LOOKUP_OPEN	0x0100
+#define LOOKUP_EMPTY	0x4000
+
+/*
+ * include/uapi/linux/stat.h
+ */
+#define S_IFMT	00170000
+#define S_IFREG	0100000
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+
+/*
+ * include/linux/fsnotify.h
+ */
+void fsnotify_open(struct file *file);
 
 #if 0
 int suid_dumpable = 0;
@@ -1246,6 +1316,7 @@ out_unlock:
 EXPORT_SYMBOL(setup_arg_pages);
 
 #endif /* CONFIG_MMU */
+#endif
 
 static struct file *do_open_execat(int fd, struct filename *name, int flags)
 {
@@ -1291,6 +1362,7 @@ exit:
 	return ERR_PTR(err);
 }
 
+#if 0
 struct file *open_exec(const char *name)
 {
 	struct filename *filename = getname_kernel(name);
@@ -1946,7 +2018,6 @@ static int exec_binprm(struct linux_binprm *bprm)
 }
 
 static void check_unsafe_exec(struct linux_binprm *bprm);
-static struct file *do_open_execat(int fd, struct filename *name, int flags);
 static int bprm_mm_init(struct linux_binprm *bprm);
 static int copy_strings(int argc, struct user_arg_ptr argv,
 			struct linux_binprm *bprm);
