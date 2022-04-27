@@ -1,24 +1,18 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-#ifndef _ASM_X86_CACHE_H
-#define _ASM_X86_CACHE_H
+#ifndef __UM_CACHE_H
+#define __UM_CACHE_H
 
-#include <linux/linkage.h>
 
-/* L1 cache line size */
-#define L1_CACHE_SHIFT	(CONFIG_X86_L1_CACHE_SHIFT)
-#define L1_CACHE_BYTES	(1 << L1_CACHE_SHIFT)
-
-#define __read_mostly __attribute__((__section__(".data..read_mostly")))
-
-#define INTERNODE_CACHE_SHIFT CONFIG_X86_INTERNODE_CACHE_SHIFT
-#define INTERNODE_CACHE_BYTES (1 << INTERNODE_CACHE_SHIFT)
-
-#ifdef CONFIG_X86_VSMP
-#ifdef CONFIG_SMP
-#define __cacheline_aligned_in_smp					\
-	__attribute__((__aligned__(INTERNODE_CACHE_BYTES)))		\
-	__page_aligned_data
-#endif
+#if defined(CONFIG_UML_X86) && !defined(CONFIG_64BIT)
+# define L1_CACHE_SHIFT		(CONFIG_X86_L1_CACHE_SHIFT)
+#elif defined(CONFIG_UML_X86) /* 64-bit */
+# define L1_CACHE_SHIFT		6 /* Should be 7 on Intel */
+#else
+/* XXX: this was taken from x86, now it's completely random. Luckily only
+ * affects SMP padding. */
+# define L1_CACHE_SHIFT		5
 #endif
 
-#endif /* _ASM_X86_CACHE_H */
+#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
+
+#endif
