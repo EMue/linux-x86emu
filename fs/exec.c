@@ -72,6 +72,7 @@
 
 #include <trace/events/sched.h>
 
+#ifndef CONFIG_X86EMU
 int suid_dumpable = 0;
 
 static LIST_HEAD(formats);
@@ -171,6 +172,7 @@ out:
   	return error;
 }
 #endif /* #ifdef CONFIG_USELIB */
+#endif /* CONFIG_X86EMU */
 
 #ifdef CONFIG_MMU
 /*
@@ -588,6 +590,7 @@ out:
 	return ret;
 }
 
+#ifndef CONFIG_X86EMU
 /*
  * Like copy_strings, but get argv and its values from kernel memory.
  */
@@ -834,6 +837,7 @@ out:
 EXPORT_SYMBOL(transfer_args_to_stack);
 
 #endif /* CONFIG_MMU */
+#endif /* CONFIG_X86EMU */
 
 static struct file *do_open_execat(int fd, struct filename *name, int flags)
 {
@@ -879,6 +883,7 @@ exit:
 	return ERR_PTR(err);
 }
 
+#ifndef CONFIG_X86EMU
 struct file *open_exec(const char *name)
 {
 	struct filename *filename = getname_kernel(name);
@@ -1395,6 +1400,7 @@ void finalize_exec(struct linux_binprm *bprm)
 	task_unlock(current->group_leader);
 }
 EXPORT_SYMBOL(finalize_exec);
+#endif /* CONFIG_X86EMU */
 
 /*
  * Prepare credentials and lock ->cred_guard_mutex.
@@ -1404,6 +1410,7 @@ EXPORT_SYMBOL(finalize_exec);
  */
 static int prepare_bprm_creds(struct linux_binprm *bprm)
 {
+#ifndef CONFIG_X86EMU
 	if (mutex_lock_interruptible(&current->signal->cred_guard_mutex))
 		return -ERESTARTNOINTR;
 
@@ -1413,6 +1420,10 @@ static int prepare_bprm_creds(struct linux_binprm *bprm)
 
 	mutex_unlock(&current->signal->cred_guard_mutex);
 	return -ENOMEM;
+#else
+	// FIXME: Stub.
+	return 0;
+#endif
 }
 
 static void free_bprm(struct linux_binprm *bprm)
@@ -1432,6 +1443,7 @@ static void free_bprm(struct linux_binprm *bprm)
 	kfree(bprm);
 }
 
+#ifndef CONFIG_X86EMU
 int bprm_change_interp(const char *interp, struct linux_binprm *bprm)
 {
 	/* If a binfmt changed the interp, free it first. */
@@ -1471,6 +1483,7 @@ void install_exec_creds(struct linux_binprm *bprm)
 	mutex_unlock(&current->signal->cred_guard_mutex);
 }
 EXPORT_SYMBOL(install_exec_creds);
+#endif /* CONFIG_X86EMU */
 
 /*
  * determine how safe it is to execute the proposed program
@@ -1480,6 +1493,8 @@ EXPORT_SYMBOL(install_exec_creds);
 static void check_unsafe_exec(struct linux_binprm *bprm)
 {
 	struct task_struct *p = current, *t;
+// FIXME: Stub.
+#ifndef CONFIG_X86EMU
 	unsigned n_fs;
 
 	if (p->ptrace)
@@ -1505,10 +1520,14 @@ static void check_unsafe_exec(struct linux_binprm *bprm)
 	if (p->fs->users > n_fs)
 		bprm->unsafe |= LSM_UNSAFE_SHARE;
 	else
+#endif
 		p->fs->in_exec = 1;
+#ifndef CONFIG_X86EMU
 	spin_unlock(&p->fs->lock);
+#endif
 }
 
+#ifndef CONFIG_X86EMU
 static void bprm_fill_uid(struct linux_binprm *bprm)
 {
 	struct inode *inode;
@@ -1683,6 +1702,7 @@ int search_binary_handler(struct linux_binprm *bprm)
 	return retval;
 }
 EXPORT_SYMBOL(search_binary_handler);
+#endif /* CONFIG_X86EMU */
 
 static int exec_binprm(struct linux_binprm *bprm)
 {
@@ -1893,6 +1913,7 @@ int do_execveat(int fd, struct filename *filename,
 	return do_execveat_common(fd, filename, argv, envp, flags);
 }
 
+#ifndef CONFIG_X86EMU
 #ifdef CONFIG_COMPAT
 static int compat_do_execve(struct filename *filename,
 	const compat_uptr_t __user *__argv,
@@ -1997,3 +2018,4 @@ COMPAT_SYSCALL_DEFINE5(execveat, int, fd,
 				  argv, envp, flags);
 }
 #endif
+#endif /* CONFIG_X86EMU */
