@@ -47,6 +47,9 @@ USER_CFLAGS = $(patsubst $(KERNEL_DEFINES),,$(patsubst -I%,,$(KBUILD_CFLAGS))) \
 #This will adjust *FLAGS accordingly to the platform.
 include $(UM_ARCH_DIR)/Makefile-os-$(OS)
 
+KBUILD_CPPFLAGS += -I$(objtree)/$(TARGET_DIR)/include/generated \
+                   -I$(objtree)/$(TARGET_DIR)/include/generated/uapi
+
 # -Derrno=kernel_errno - This turns all kernel references to errno into
 # kernel_errno to separate them from the libc errno.  This allows -fno-common
 # in KBUILD_CFLAGS.  Otherwise, it would cause ld to complain about the two different
