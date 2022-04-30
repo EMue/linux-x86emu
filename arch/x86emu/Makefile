@@ -11,6 +11,10 @@ SHELL := /bin/bash
 
 HEADER_ARCH     := x86
 
+TARGET_DIR := arch/$(HEADER_ARCH)
+TARGET_CROSS_COMPILE := x86_64-linux-gnu-
+TARGET_CC = $(TARGET_CROSS_COMPILE)gcc
+
 SHARED_HEADERS	:= $(ARCH_DIR)/include/shared
 ARCH_INCLUDE	:= -I$(srctree)/$(SHARED_HEADERS)
 
@@ -68,6 +72,12 @@ define archhelp
   echo '		   real kernel binary, the "vmlinux" binary you'
   echo '		   find in the kernel root.'
 endef
+
+archheaders:
+	$(Q)$(MAKE) -f $(srctree)/Makefile ARCH=$(HEADER_ARCH) CROSS_COMPILE=$(TARGET_CROSS_COMPILE) CC=$(TARGET_CC) asm-generic archheaders
+
+archprepare:
+	$(Q)$(MAKE) $(build)=$(TARGET_DIR)/um CROSS_COMPILE=$(TARGET_CROSS_COMPILE) CC=$(TARGET_CC) include/generated/user_constants.h
 
 LINK-$(CONFIG_LD_SCRIPT_STATIC) += -static
 LINK-$(CONFIG_LD_SCRIPT_DYN) += -Wl,-rpath,/lib $(call cc-option, -no-pie)
