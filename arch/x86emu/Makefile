@@ -2,14 +2,16 @@
 
 KBUILD_DEFCONFIG := x86_64_defconfig
 
-ARCH_DIR := arch/emu
+ARCH_DIR := arch/x86emu
 UM_ARCH_DIR := arch/um
 OS := $(shell uname -s)
 # We require bash because the vmlinux link and loader script cpp use bash
 # features.
 SHELL := /bin/bash
 
-HEADER_ARCH     := x86
+MODE_INCLUDE	+= -I$(srctree)/$(ARCH_DIR)/include/shared/skas
+
+HEADER_ARCH	:= x86
 
 TARGET_DIR := arch/$(HEADER_ARCH)
 TARGET_CROSS_COMPILE := x86_64-linux-gnu-
