@@ -1,5 +1,14 @@
 # SPDX-License-Identifier: GPL-2.0
 
+menu "x86 emulation specific options"
+
+config X86EMU
+	bool
+	default y
+
+endmenu
+
+
 menu "UML-specific options"
 
 config UML
