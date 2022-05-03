@@ -1,34 +1,30 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-#ifndef __UM_IRQFLAGS_H
-#define __UM_IRQFLAGS_H
-
-extern int get_signals(void);
-extern int set_signals(int enable);
-extern void block_signals(void);
-extern void unblock_signals(void);
+#ifndef __X86EMU_IRQFLAGS_H
+#define __X86EMU_IRQFLAGS_H
 
 #define arch_local_save_flags arch_local_save_flags
 static inline unsigned long arch_local_save_flags(void)
 {
-	return get_signals();
+	// FIXME: Stub.
+	return 0;
 }
 
 #define arch_local_irq_restore arch_local_irq_restore
 static inline void arch_local_irq_restore(unsigned long flags)
 {
-	set_signals(flags);
+	// FIXME: Stub.
 }
 
 #define arch_local_irq_enable arch_local_irq_enable
 static inline void arch_local_irq_enable(void)
 {
-	unblock_signals();
+	// FIXME: Stub.
 }
 
 #define arch_local_irq_disable arch_local_irq_disable
 static inline void arch_local_irq_disable(void)
 {
-	block_signals();
+	// FIXME: Stub.
 }
 
 #define ARCH_IRQ_DISABLED	0
