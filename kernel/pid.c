@@ -41,6 +41,7 @@
 #include <linux/sched/task.h>
 #include <linux/idr.h>
 
+#ifndef CONFIG_X86EMU
 struct pid init_struct_pid = {
 	.count 		= ATOMIC_INIT(1),
 	.tasks		= {
@@ -266,6 +267,7 @@ struct pid *find_vpid(int nr)
 	return find_pid_ns(nr, task_active_pid_ns(current));
 }
 EXPORT_SYMBOL_GPL(find_vpid);
+#endif /* CONFIG_X86EMU */
 
 static struct pid **task_pid_ptr(struct task_struct *task, enum pid_type type)
 {
@@ -274,6 +276,7 @@ static struct pid **task_pid_ptr(struct task_struct *task, enum pid_type type)
 		&task->signal->pids[type];
 }
 
+#ifndef CONFIG_X86EMU
 /*
  * attach_pid() must be called with the tasklist_lock write-held.
  */
@@ -418,6 +421,7 @@ pid_t pid_vnr(struct pid *pid)
 	return pid_nr_ns(pid, task_active_pid_ns(current));
 }
 EXPORT_SYMBOL_GPL(pid_vnr);
+#endif /* CONFIG_X86EMU */
 
 pid_t __task_pid_nr_ns(struct task_struct *task, enum pid_type type,
 			struct pid_namespace *ns)
@@ -441,6 +445,7 @@ struct pid_namespace *task_active_pid_ns(struct task_struct *tsk)
 }
 EXPORT_SYMBOL_GPL(task_active_pid_ns);
 
+#ifndef CONFIG_X86EMU
 /*
  * Used by proc to find the first pid that is greater than or equal to nr.
  *
@@ -468,3 +473,4 @@ void __init pid_idr_init(void)
 	init_pid_ns.pid_cachep = KMEM_CACHE(pid,
 			SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_ACCOUNT);
 }
+#endif /* CONFIG_X86EMU */
