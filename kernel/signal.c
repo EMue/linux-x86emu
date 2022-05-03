@@ -1539,14 +1539,21 @@ EXPORT_SYMBOL(send_sig_info);
 
 #define __si_special(priv) \
 	((priv) ? SEND_SIG_PRIV : SEND_SIG_NOINFO)
+#endif /* CONFIG_X86EMU */
 
 int
 send_sig(int sig, struct task_struct *p, int priv)
 {
+#ifndef CONFIG_X86EMU
 	return send_sig_info(sig, __si_special(priv), p);
+#else
+	// FIXME: Stub.
+	return 0;
+#endif
 }
 EXPORT_SYMBOL(send_sig);
 
+#ifndef CONFIG_X86EMU
 void force_sig(int sig, struct task_struct *p)
 {
 	force_sig_info(sig, SEND_SIG_PRIV, p);
