@@ -40,6 +40,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/pagemap.h>
 
+#ifndef CONFIG_X86EMU
 /* How many pages do we try to swap or page in/out together? */
 int page_cluster;
 
@@ -50,6 +51,7 @@ static DEFINE_PER_CPU(struct pagevec, lru_lazyfree_pvecs);
 #ifdef CONFIG_SMP
 static DEFINE_PER_CPU(struct pagevec, activate_page_pvecs);
 #endif
+#endif /* CONFIG_X86EMU */
 
 /*
  * This path almost never happens for VM activity - pages are normally
@@ -114,6 +116,7 @@ void __put_page(struct page *page)
 }
 EXPORT_SYMBOL(__put_page);
 
+#ifndef CONFIG_X86EMU
 /**
  * put_pages_list() - release a list of pages
  * @pages: list of pages threaded on page->lru
@@ -1037,3 +1040,4 @@ void __init swap_setup(void)
 	 * _really_ don't want to cluster much more
 	 */
 }
+#endif /* CONFIG_X86EMU */
