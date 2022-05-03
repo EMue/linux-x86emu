@@ -52,6 +52,7 @@
 #include <asm/cacheflush.h>
 #include "audit.h"	/* audit_signal_info() */
 
+#ifndef CONFIG_X86EMU
 /*
  * SLAB caches for signal bits.
  */
@@ -2160,9 +2161,11 @@ static void ptrace_do_notify(int signr, int exit_code, int why)
 	/* Let the debugger run.  */
 	ptrace_stop(exit_code, why, 1, &info);
 }
+#endif /* CONFIG_X86EMU */
 
 void ptrace_notify(int exit_code)
 {
+#ifndef CONFIG_X86EMU
 	BUG_ON((exit_code & (0x7f | ~0xffff)) != SIGTRAP);
 	if (unlikely(current->task_works))
 		task_work_run();
@@ -2170,8 +2173,12 @@ void ptrace_notify(int exit_code)
 	spin_lock_irq(&current->sighand->siglock);
 	ptrace_do_notify(SIGTRAP, exit_code, CLD_TRAPPED);
 	spin_unlock_irq(&current->sighand->siglock);
+#else
+	// FIXME: Stub.
+#endif
 }
 
+#ifndef CONFIG_X86EMU
 /**
  * do_signal_stop - handle group stop for SIGSTOP and other stop signals
  * @signr: signr causing group stop if initiating
@@ -4340,3 +4347,4 @@ void kdb_send_sig(struct task_struct *t, int sig)
 		kdb_printf("Signal %d is sent to process %d.\n", sig, t->pid);
 }
 #endif	/* CONFIG_KGDB_KDB */
+#endif /* CONFIG_X86EMU */
