@@ -208,7 +208,7 @@
  * may print a "call without frame pointer save/setup" warning.
  */
 // Removed register declaration.
-unsigned long current_stack_pointer;
+extern unsigned long current_stack_pointer;
 #define ASM_CALL_CONSTRAINT "+r" (current_stack_pointer)
 #endif
 
