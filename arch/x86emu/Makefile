@@ -9,6 +9,8 @@ OS := $(shell uname -s)
 # features.
 SHELL := /bin/bash
 
+core-y			+= $(ARCH_DIR)/kernel/          \
+
 MODE_INCLUDE	+= -I$(srctree)/$(ARCH_DIR)/include/shared/skas
 
 HEADER_ARCH	:= x86
