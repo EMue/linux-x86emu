@@ -1435,7 +1435,11 @@ static void free_bprm(struct linux_binprm *bprm)
 	}
 	if (bprm->file) {
 		allow_write_access(bprm->file);
+#ifndef X86EMU
 		fput(bprm->file);
+#else
+		__fput_sync(bprm->file);
+#endif
 	}
 	/* If a binfmt changed the interp, free it. */
 	if (bprm->interp != bprm->filename)

@@ -31,10 +31,12 @@
 
 #include "internal.h"
 
+#ifndef CONFIG_X86EMU
 /* sysctl tunables... */
 struct files_stat_struct files_stat = {
 	.max_files = NR_FILE
 };
+#endif /* CONFIG_X86EMU */
 
 /* SLAB cache for file structures */
 static struct kmem_cache *filp_cachep __read_mostly;
@@ -57,6 +59,7 @@ static inline void file_free(struct file *f)
 	call_rcu(&f->f_u.fu_rcuhead, file_free_rcu);
 }
 
+#ifndef CONFIG_X86EMU
 /*
  * Return the total number of open files in the system
  */
@@ -247,6 +250,7 @@ struct file *alloc_file_clone(struct file *base, int flags,
 	}
 	return f;
 }
+#endif /* CONFIG_X86EMU */
 
 /* the real guts of fput() - releasing the last reference to file
  */
@@ -294,6 +298,7 @@ out:
 	file_free(file);
 }
 
+#ifndef CONFIG_X86EMU
 static LLIST_HEAD(delayed_fput_list);
 static void delayed_fput(struct work_struct *unused)
 {
@@ -346,6 +351,7 @@ void fput(struct file *file)
 			schedule_delayed_work(&delayed_fput_work, 1);
 	}
 }
+#endif /* CONFIG_X86EMU */
 
 /*
  * synchronous analog of fput(); for kernel threads that might be needed
@@ -364,6 +370,7 @@ void __fput_sync(struct file *file)
 	}
 }
 
+#ifndef CONFIG_X86EMU
 EXPORT_SYMBOL(fput);
 
 void __init files_init(void)
@@ -388,3 +395,4 @@ void __init files_maxfiles_init(void)
 
 	files_stat.max_files = max_t(unsigned long, n, NR_FILE);
 }
+#endif /* CONFIG_X86EMU */
