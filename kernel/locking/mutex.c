@@ -29,6 +29,7 @@
 #include <linux/debug_locks.h>
 #include <linux/osq_lock.h>
 
+#ifndef CONFIG_X86EMU
 #ifdef CONFIG_DEBUG_MUTEXES
 # include "mutex-debug.h"
 #else
@@ -692,6 +693,7 @@ mutex_optimistic_spin(struct mutex *lock, struct ww_acquire_ctx *ww_ctx,
 #endif
 
 static noinline void __sched __mutex_unlock_slowpath(struct mutex *lock, unsigned long ip);
+#endif /* CONFIG_X86EMU */
 
 /**
  * mutex_unlock - release the mutex
@@ -706,14 +708,19 @@ static noinline void __sched __mutex_unlock_slowpath(struct mutex *lock, unsigne
  */
 void __sched mutex_unlock(struct mutex *lock)
 {
+#ifndef CONFIG_X86EMU
 #ifndef CONFIG_DEBUG_LOCK_ALLOC
 	if (__mutex_unlock_fast(lock))
 		return;
 #endif
 	__mutex_unlock_slowpath(lock, _RET_IP_);
+#else
+	// FIXME: Stub.
+#endif
 }
 EXPORT_SYMBOL(mutex_unlock);
 
+#ifndef CONFIG_X86EMU
 /**
  * ww_mutex_unlock - release the w/w mutex
  * @lock: the mutex to be released
@@ -1443,3 +1450,4 @@ int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock)
 	return 1;
 }
 EXPORT_SYMBOL(atomic_dec_and_mutex_lock);
+#endif /* CONFIG_X86EMU */
