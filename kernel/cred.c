@@ -21,6 +21,7 @@
 #include <linux/cn_proc.h>
 #include <linux/uidgid.h>
 
+#ifndef CONFIG_X86EMU
 #if 0
 #define kdebug(FMT, ...)						\
 	printk("[%-5.5s%5u] " FMT "\n",					\
@@ -491,6 +492,7 @@ int commit_creds(struct cred *new)
 	return 0;
 }
 EXPORT_SYMBOL(commit_creds);
+#endif /* CONFIG_X86EMU */
 
 /**
  * abort_creds - Discard a set of credentials and unlock the current task
@@ -501,6 +503,7 @@ EXPORT_SYMBOL(commit_creds);
  */
 void abort_creds(struct cred *new)
 {
+#ifndef CONFIG_X86EMU
 	kdebug("abort_creds(%p{%d,%d})", new,
 	       atomic_read(&new->usage),
 	       read_cred_subscribers(new));
@@ -510,9 +513,13 @@ void abort_creds(struct cred *new)
 #endif
 	BUG_ON(atomic_read(&new->usage) < 1);
 	put_cred(new);
+#else
+	// FIXME: Stub.
+#endif
 }
 EXPORT_SYMBOL(abort_creds);
 
+#ifndef CONFIG_X86EMU
 /**
  * override_creds - Override the current process's subjective credentials
  * @new: The credentials to be assigned
@@ -872,3 +879,4 @@ void validate_creds_for_do_exit(struct task_struct *tsk)
 }
 
 #endif /* CONFIG_DEBUG_CREDENTIALS */
+#endif /* CONFIG_X86EMU */
