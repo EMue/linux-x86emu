@@ -10,6 +10,7 @@ OS := $(shell uname -s)
 SHELL := /bin/bash
 
 core-y			+= $(ARCH_DIR)/kernel/          \
+			+= $(ARCH_DIR)/emu/		\
 
 MODE_INCLUDE	+= -I$(srctree)/$(ARCH_DIR)/include/shared/skas
 
